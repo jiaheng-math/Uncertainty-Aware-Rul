@@ -62,7 +62,17 @@ def count_parameters(model: torch.nn.Module) -> int:
     return sum(param.numel() for param in model.parameters() if param.requires_grad)
 
 
-def run_epoch(model, loader, optimizer, device, model_type: str, train: bool, epoch: int, total_epochs: int) -> dict:
+def run_epoch(
+    model,
+    loader,
+    optimizer,
+    device,
+    model_type: str,
+    train: bool,
+    epoch: int | None = None,
+    total_epochs: int | None = None,
+    stage_name: str | None = None,
+) -> dict:
     if train:
         model.train()
     else:
@@ -74,10 +84,11 @@ def run_epoch(model, loader, optimizer, device, model_type: str, train: bool, ep
     mus = []
     logvars = []
 
-    stage = "Train" if train else "Val"
+    stage = stage_name or ("Train" if train else "Eval")
+    epoch_desc = f"Epoch {epoch}/{total_epochs}" if epoch is not None and total_epochs is not None else "Inference"
     progress = tqdm(
         loader,
-        desc=f"Epoch {epoch}/{total_epochs} [{stage}]",
+        desc=f"{epoch_desc} [{stage}]",
         leave=False,
         dynamic_ncols=True,
         disable=not sys.stderr.isatty(),
@@ -145,7 +156,15 @@ def run_epoch(model, loader, optimizer, device, model_type: str, train: bool, ep
 
 
 def evaluate_on_test(model, loader, dataset, device, model_type: str) -> dict:
-    metrics = run_epoch(model=model, loader=loader, optimizer=None, device=device, model_type=model_type, train=False)
+    metrics = run_epoch(
+        model=model,
+        loader=loader,
+        optimizer=None,
+        device=device,
+        model_type=model_type,
+        train=False,
+        stage_name="Test",
+    )
     result = {
         "test_rmse": metrics["rmse"],
         "test_phm_score": metrics["phm_score"],
