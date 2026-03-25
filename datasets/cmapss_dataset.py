@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import shutil
+import subprocess
 import zipfile
 from dataclasses import dataclass
 from pathlib import Path
@@ -117,9 +119,26 @@ def ensure_subset_files(data_dir: str | Path, subset: str, zip_path: str | Path 
     if not archive_path.exists():
         raise FileNotFoundError(f"Missing data archive: {archive_path}")
 
-    with zipfile.ZipFile(archive_path, "r") as archive:
-        for name in expected_files:
-            archive.extract(name, path=data_dir)
+    try:
+        with zipfile.ZipFile(archive_path, "r") as archive:
+            for name in missing:
+                with archive.open(name, "r") as src, (data_dir / name).open("wb") as dst:
+                    shutil.copyfileobj(src, dst)
+    except (OSError, zipfile.BadZipFile, KeyError) as exc:
+        unzip_executable = shutil.which("unzip")
+        if unzip_executable is None:
+            raise RuntimeError(
+                f"Failed to extract CMAPSS files from {archive_path}. "
+                "The zip archive may be corrupted, and no system 'unzip' command is available."
+            ) from exc
+
+        cmd = [unzip_executable, "-o", "-j", str(archive_path), *missing, "-d", str(data_dir)]
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        if result.returncode != 0:
+            raise RuntimeError(
+                f"Failed to extract CMAPSS files from {archive_path} using both Python zipfile "
+                f"and system unzip.\nzipfile error: {exc}\nunzip stderr: {result.stderr.strip()}"
+            ) from exc
 
 
 def load_cmapss_frame(path: str | Path) -> pd.DataFrame:
