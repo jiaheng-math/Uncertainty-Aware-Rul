@@ -52,7 +52,18 @@ project/
 
 ## 环境安装
 
-建议使用 Python 3.10 及以上版本。
+建议固定使用 `Python 3.10`。
+
+推荐环境：
+
+- Python `3.10`
+- PyTorch `2.2.2`
+- numpy `1.26.4`
+- pandas `2.2.3`
+- scikit-learn `1.5.2`
+- matplotlib `3.9.2`
+- PyYAML `6.0.2`
+- pytest `8.3.3`
 
 ```bash
 pip install -r requirements.txt
