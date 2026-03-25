@@ -4,6 +4,7 @@ data:
   rul_clip: 130
   window_size: 30
   val_ratio: 0.2
+  validation_mode: "pseudo_test"
   include_op_settings: true
   var_threshold: 1.0e-4
   padding_mode: "repeat"
@@ -21,10 +22,12 @@ training:
   weight_decay: 1.0e-4
   optimizer: "AdamW"
   scheduler: "ReduceLROnPlateau"
+  scheduler_monitor: "val_loss"
   scheduler_patience: 10
   scheduler_factor: 0.5
   early_stopping_monitor: "val_loss"
   early_stopping_patience: 20
+  clip_predictions: true
   seed: 42
 
 warning:

@@ -16,6 +16,7 @@ project/
 ├── configs/
 │   ├── fd001_tcn_point.yaml
 │   ├── fd001_tcn_uncertainty.yaml
+│   ├── fd001_tcn_uncertainty_rmse_select.yaml
 │   └── fd003_tcn_uncertainty.yaml
 ├── datasets/
 │   └── cmapss_dataset.py
@@ -97,6 +98,12 @@ python scripts/train.py --config configs/fd001_tcn_point.yaml
 python scripts/train.py --config configs/fd001_tcn_uncertainty.yaml
 ```
 
+若用于与点预测模型公平比较 `RMSE / PHM Score`，使用：
+
+```bash
+python scripts/train.py --config configs/fd001_tcn_uncertainty_rmse_select.yaml
+```
+
 迁移到 FD003：
 
 ```bash
@@ -133,6 +140,7 @@ python scripts/preprocess_cmapss.py --config configs/fd001_tcn_uncertainty.yaml
 - `window_size`：滑动窗口长度
 - `val_ratio`：按 `unit_id` 划分验证集比例
 - `validation_mode`：`window` 或 `pseudo_test`
+  - 论文里若比较最终 `RMSE / PHM Score`，建议使用 `pseudo_test`
 - `include_op_settings`：是否将 `op1/op2/op3` 纳入输入
 - `var_threshold`：近零方差筛选阈值，仅作用于 `s1~s21`
 - `padding_mode`：测试和轨迹可视化时左侧补齐方式，支持 `repeat`、`zero`
@@ -153,6 +161,8 @@ python scripts/preprocess_cmapss.py --config configs/fd001_tcn_uncertainty.yaml
 - `scheduler_monitor`：可选 `val_loss` 或 `val_rmse`
 - `scheduler_patience`、`scheduler_factor`
 - `early_stopping_monitor`：可选 `val_loss` 或 `val_rmse`
+  - 不确定性校准分析建议保留 `val_loss`
+  - 与点预测做预测精度公平对比时，建议统一为 `val_rmse`
 - `early_stopping_patience`
 - `point_loss`：点预测损失，支持 `mse`、`smooth_l1`
 - `smooth_l1_beta`

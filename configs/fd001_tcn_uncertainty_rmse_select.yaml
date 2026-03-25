@@ -22,10 +22,10 @@ training:
   weight_decay: 1.0e-4
   optimizer: "AdamW"
   scheduler: "ReduceLROnPlateau"
-  scheduler_monitor: "val_loss"
+  scheduler_monitor: "val_rmse"
   scheduler_patience: 10
   scheduler_factor: 0.5
-  early_stopping_monitor: "val_loss"
+  early_stopping_monitor: "val_rmse"
   early_stopping_patience: 20
   clip_predictions: true
   seed: 42
