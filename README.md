@@ -63,6 +63,7 @@ project/
 - scikit-learn `1.5.2`
 - matplotlib `3.9.2`
 - PyYAML `6.0.2`
+- tqdm `4.66.5`
 - pytest `8.3.3`
 
 ```bash

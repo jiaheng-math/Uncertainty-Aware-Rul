@@ -11,6 +11,7 @@ import torch
 import yaml
 from torch.optim import Adam, AdamW
 from torch.optim.lr_scheduler import ReduceLROnPlateau
+from tqdm import tqdm
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
@@ -61,7 +62,7 @@ def count_parameters(model: torch.nn.Module) -> int:
     return sum(param.numel() for param in model.parameters() if param.requires_grad)
 
 
-def run_epoch(model, loader, optimizer, device, model_type: str, train: bool) -> dict:
+def run_epoch(model, loader, optimizer, device, model_type: str, train: bool, epoch: int, total_epochs: int) -> dict:
     if train:
         model.train()
     else:
@@ -73,7 +74,16 @@ def run_epoch(model, loader, optimizer, device, model_type: str, train: bool) ->
     mus = []
     logvars = []
 
-    for x, y in loader:
+    stage = "Train" if train else "Val"
+    progress = tqdm(
+        loader,
+        desc=f"Epoch {epoch}/{total_epochs} [{stage}]",
+        leave=False,
+        dynamic_ncols=True,
+        disable=not sys.stderr.isatty(),
+    )
+
+    for batch_idx, (x, y) in enumerate(progress, start=1):
         x = x.to(device)
         y = y.to(device)
 
@@ -100,6 +110,8 @@ def run_epoch(model, loader, optimizer, device, model_type: str, train: bool) ->
         mus.append(batch_mu.detach().cpu().numpy())
         if batch_logvar is not None:
             logvars.append(batch_logvar.detach().cpu().numpy())
+
+        progress.set_postfix(loss=f"{np.mean(losses):.4f}", batch=batch_idx)
 
     pred_arr = np.concatenate(preds)
     true_arr = np.concatenate(targets)
@@ -236,6 +248,8 @@ def main() -> None:
             device=device,
             model_type=model_type,
             train=True,
+            epoch=epoch,
+            total_epochs=total_epochs,
         )
         val_metrics = run_epoch(
             model=model,
@@ -244,6 +258,8 @@ def main() -> None:
             device=device,
             model_type=model_type,
             train=False,
+            epoch=epoch,
+            total_epochs=total_epochs,
         )
 
         scheduler.step(val_metrics["loss"])
