@@ -1,0 +1,42 @@
+data:
+  subset: "FD003"
+  data_dir: "data/"
+  rul_clip: 130
+  window_size: 30
+  val_ratio: 0.2
+  include_op_settings: true
+  var_threshold: 1.0e-4
+  padding_mode: "repeat"
+
+model:
+  type: "uncertainty"
+  num_channels: [64, 64, 64, 64]
+  kernel_size: 3
+  dropout: 0.2
+
+training:
+  batch_size: 256
+  epochs: 100
+  lr: 1.0e-3
+  weight_decay: 1.0e-4
+  optimizer: "AdamW"
+  scheduler: "ReduceLROnPlateau"
+  scheduler_patience: 10
+  scheduler_factor: 0.5
+  early_stopping_monitor: "val_loss"
+  early_stopping_patience: 20
+  seed: 42
+
+warning:
+  thresholds:
+    normal: 80
+    watch: 50
+    alert: 20
+  sigma_escalation: true
+  sigma_threshold: 15
+
+output:
+  results_dir: "results/"
+  figures_dir: "results/figures/"
+  checkpoint_dir: "results/checkpoints/"
+  logs_dir: "results/logs/"
