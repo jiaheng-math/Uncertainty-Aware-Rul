@@ -1,0 +1,52 @@
+data:
+  subset: "FD001"
+  data_dir: "data/"
+  rul_clip: 130
+  window_size: 45
+  val_ratio: 0.2
+  validation_mode: "pseudo_test"
+  include_op_settings: false
+  var_threshold: 1.0e-4
+  padding_mode: "repeat"
+
+model:
+  type: "uncertainty"
+  num_channels: [64, 64, 64, 64, 64]
+  kernel_size: 3
+  dropout: 0.1
+
+training:
+  batch_size: 128
+  epochs: 150
+  lr: 5.0e-4
+  weight_decay: 5.0e-5
+  optimizer: "AdamW"
+  scheduler: "ReduceLROnPlateau"
+  scheduler_monitor: "val_rmse"
+  scheduler_patience: 6
+  scheduler_factor: 0.5
+  early_stopping_monitor: "val_rmse"
+  early_stopping_patience: 25
+  # 复合损失：NLL + λ × Smooth L1（为 μ 提供独立的精度梯度信号）
+  point_loss: "smooth_l1"
+  smooth_l1_beta: 2.0
+  point_loss_weight: 0.1
+  low_rul_threshold: 40
+  low_rul_weight: 2.5
+  gradient_clip_norm: 1.0
+  clip_predictions: true
+  seed: 42
+
+warning:
+  thresholds:
+    normal: 80
+    watch: 50
+    alert: 20
+  sigma_escalation: true
+  sigma_threshold: 15
+
+output:
+  results_dir: "results/"
+  figures_dir: "results/figures/"
+  checkpoint_dir: "results/checkpoints/"
+  logs_dir: "results/logs/"

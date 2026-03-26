@@ -14,7 +14,7 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from datasets.cmapss_dataset import build_dataloaders, build_unit_trajectory_windows
-from models.tcn_rul_model import TCNPointModel, TCNUncertaintyModel
+from models import build_model
 from utils.experiment import get_experiment_name
 from utils.plotting import plot_engine_degradation, plot_loss_curve, plot_test_predictions, plot_warning_demo
 from utils.rul import clip_rul_array
@@ -25,18 +25,6 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Visualize CMAPSS training and prediction outputs.")
     parser.add_argument("--config", type=str, required=True, help="Path to config YAML.")
     return parser.parse_args()
-
-
-def build_model(config: dict, input_dim: int) -> torch.nn.Module:
-    kwargs = {
-        "n_features": input_dim,
-        "num_channels": config["model"]["num_channels"],
-        "kernel_size": config["model"]["kernel_size"],
-        "dropout": config["model"]["dropout"],
-    }
-    if config["model"]["type"] == "point":
-        return TCNPointModel(**kwargs)
-    return TCNUncertaintyModel(**kwargs)
 
 
 def predict_dataset(model, loader, dataset, device, model_type: str, config: dict) -> dict:

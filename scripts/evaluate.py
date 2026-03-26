@@ -17,7 +17,7 @@ from losses.gaussian_nll import gaussian_nll_loss, weighted_point_loss
 from metrics.phm_score import compute_phm_score
 from metrics.rmse import compute_rmse
 from metrics.uncertainty_metrics import compute_mpiw, compute_picp
-from models.tcn_rul_model import TCNPointModel, TCNUncertaintyModel
+from models import build_model
 from utils.experiment import get_experiment_name
 from utils.logger import get_timestamp, save_json, setup_logger
 from utils.rul import clip_rul_array
@@ -27,18 +27,6 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Evaluate a trained TCN model on CMAPSS test set.")
     parser.add_argument("--config", type=str, required=True, help="Path to config YAML.")
     return parser.parse_args()
-
-
-def build_model(config: dict, input_dim: int) -> torch.nn.Module:
-    kwargs = {
-        "n_features": input_dim,
-        "num_channels": config["model"]["num_channels"],
-        "kernel_size": config["model"]["kernel_size"],
-        "dropout": config["model"]["dropout"],
-    }
-    if config["model"]["type"] == "point":
-        return TCNPointModel(**kwargs)
-    return TCNUncertaintyModel(**kwargs)
 
 
 def evaluate(model, loader, dataset, device, model_type: str, config: dict) -> dict:

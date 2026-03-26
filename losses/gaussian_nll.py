@@ -21,6 +21,34 @@ def gaussian_nll_loss(mu: torch.Tensor, logvar: torch.Tensor, target: torch.Tens
     return loss.mean()
 
 
+def composite_uncertainty_loss(
+    mu: torch.Tensor,
+    logvar: torch.Tensor,
+    target: torch.Tensor,
+    point_loss_name: str = "mse",
+    point_loss_weight: float = 0.1,
+    low_rul_threshold: float | None = None,
+    low_rul_weight: float = 1.0,
+    smooth_l1_beta: float = 1.0,
+) -> torch.Tensor:
+    """复合不确定性损失：NLL + λ × 点预测损失。
+
+    纯 NLL 损失可能导致模型通过放大 σ² 来降低损失，而不是提高 μ 精度。
+    添加独立的点预测损失项为 μ 提供直接的梯度信号，使不确定性模型的
+    预测精度逼近点模型水平，同时保留 σ 的校准能力。
+
+    总损失 = NLL(μ, σ², y) + point_loss_weight × PointLoss(μ, y)
+    """
+    nll = gaussian_nll_loss(mu, logvar, target)
+    point = weighted_point_loss(
+        mu, target, point_loss_name,
+        low_rul_threshold=low_rul_threshold,
+        low_rul_weight=low_rul_weight,
+        smooth_l1_beta=smooth_l1_beta,
+    )
+    return nll + point_loss_weight * point
+
+
 def mse_loss(pred: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
     """标准均方误差损失，用于点预测模型。"""
     return F.mse_loss(pred, target)
