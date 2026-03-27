@@ -44,6 +44,7 @@ reasoning:
     - Avoid generic phrases like "closely monitor" unless you also state what to monitor and why.
     - In <maintenance_action>, state a concrete action window such as immediate, next 10 cycles, next 20 cycles, or routine monitoring.
     - In <maintenance_action>, explicitly write one of: immediate, next 10 cycles, next 20 cycles, routine monitoring.
+    - If you mention a stricter future action, put it in <follow_up_checks> and make it explicitly conditional using words such as "if" or "when".
     - In <confidence_note>, explain confidence from the uncertainty and sensor evidence, not from vague judgement.
     - Output only the five tags and their contents. No extra wrapper tags, markdown fences, bullet titles, or preamble.
   max_new_tokens: 768

@@ -112,6 +112,12 @@ def _contains_approx_value(text: str, value: float | None) -> bool:
 
 def _extract_action_urgency(text: str) -> tuple[int | None, str | None]:
     lowered = text.lower()
+    if re.search(r"\b(if|when)\b.{0,80}next\s+10\s+cycles", lowered, flags=re.DOTALL):
+        lowered = re.sub(r"\b(if|when)\b.{0,80}next\s+10\s+cycles", "", lowered, flags=re.DOTALL)
+    if re.search(r"\b(if|when)\b.{0,80}next\s+20\s+cycles", lowered, flags=re.DOTALL):
+        lowered = re.sub(r"\b(if|when)\b.{0,80}next\s+20\s+cycles", "", lowered, flags=re.DOTALL)
+    if re.search(r"\b(if|when)\b.{0,80}immediate", lowered, flags=re.DOTALL):
+        lowered = re.sub(r"\b(if|when)\b.{0,80}immediate", "", lowered, flags=re.DOTALL)
     if "no immediate action" in lowered:
         # Treated as a weak form of routine handling unless a stronger explicit window is present later.
         return 0, "no immediate action"
