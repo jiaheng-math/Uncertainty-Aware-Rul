@@ -155,6 +155,22 @@ def _expected_action_urgency(prediction: dict[str, Any], thresholds: dict[str, f
     return 0
 
 
+def _extract_stated_warning_levels(text: str) -> list[str]:
+    levels = ["正常", "关注", "预警", "危险"]
+    patterns = [
+        r"warning level[:：]?\s*(正常|关注|预警|危险)",
+        r"current status is\s*[\"“]?(正常|关注|预警|危险)",
+        r"status is\s*[\"“]?(正常|关注|预警|危险)",
+        r"当前状态[是为:]?\s*[\"“]?(正常|关注|预警|危险)",
+    ]
+    found: list[str] = []
+    for pattern in patterns:
+        for match in re.findall(pattern, text, flags=re.IGNORECASE):
+            if match in levels and match not in found:
+                found.append(match)
+    return found
+
+
 def evaluate_response_quality(
     report: dict[str, Any],
     thresholds: dict[str, float] | None = None,
@@ -182,6 +198,7 @@ def evaluate_response_quality(
         "mentioned_sensors": mentioned_sensors,
         "sensor_count": len(mentioned_sensors),
     }
+    stated_warning_levels = _extract_stated_warning_levels(text)
 
     consistency_issues: list[str] = []
     lowered = text.lower()
@@ -199,6 +216,9 @@ def evaluate_response_quality(
         or "full inspection" in maintenance_lowered
     ):
         consistency_issues.append("the response says no immediate action but still recommends a strong intervention.")
+    expected_warning_level = prediction.get("warning", {}).get("level")
+    if stated_warning_levels and expected_warning_level not in stated_warning_levels:
+        consistency_issues.append("the stated warning level in the response does not match the input warning level.")
 
     expected_urgency = _expected_action_urgency(prediction, thresholds)
     actual_urgency, action_label = _extract_action_urgency(maintenance_text, allow_conditional=False)
@@ -224,6 +244,7 @@ def evaluate_response_quality(
         },
         "grounding": {
             **grounding,
+            "stated_warning_levels": stated_warning_levels,
             "grounding_ok": (
                 grounding["mentions_predicted_rul"]
                 and grounding["mentions_lower_bound"]
