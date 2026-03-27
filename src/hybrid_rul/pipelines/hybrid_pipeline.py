@@ -4,6 +4,7 @@ from pathlib import Path
 
 from hybrid_rul.adapters.tcn_adapter import TCNProjectAdapter
 from hybrid_rul.adapters.timeomni_adapter import GenerationConfig, TimeOmniAdapter
+from hybrid_rul.llm_output import evaluate_response_quality, normalize_llm_response
 from hybrid_rul.paths import resolve_path
 from hybrid_rul.prompts.builder import build_timeomni_question
 from hybrid_rul.summarizers.engine_summary import build_engine_summary
@@ -73,6 +74,7 @@ class HybridPipeline:
         feature_columns = self.tcn.get_feature_columns()
         system_prompt = reasoning_cfg["system_prompt"]
         should_generate = bool(reasoning_cfg.get("enable_timeomni", False) and self.timeomni.enabled)
+        thresholds = self.tcn.config["warning"]["thresholds"]
 
         reports = []
         prompts = []
@@ -86,8 +88,9 @@ class HybridPipeline:
                 top_k_features=int(analysis_cfg.get("top_k_features", 5)),
             )
 
-            question = build_timeomni_question(prediction, summary)
+            question = build_timeomni_question(prediction, summary, thresholds=thresholds)
             llm_output = self.timeomni.generate(question=question, system_prompt=system_prompt) if should_generate else None
+            llm_audit = normalize_llm_response(llm_output) if llm_output is not None else None
 
             prompt_record = {
                 "unit_id": prediction["unit_id"],
@@ -96,14 +99,31 @@ class HybridPipeline:
             }
             prompts.append(prompt_record)
 
+            report_payload = {
+                "unit_id": prediction["unit_id"],
+                "tcn_prediction": prediction,
+                "sensor_summary": summary,
+                "timeomni_question": question,
+                "timeomni_response": llm_audit["cleaned_text"] if llm_audit is not None else None,
+                "timeomni_raw_response": llm_output,
+                "timeomni_response_audit": (
+                    {
+                        "missing_tags": llm_audit["missing_tags"],
+                        "duplicate_tags": llm_audit["duplicate_tags"],
+                        "extra_tags": llm_audit["extra_tags"],
+                        "removed_wrappers": llm_audit["removed_wrappers"],
+                        "raw_format_ok": llm_audit["raw_format_ok"],
+                        "clean_format_ok": llm_audit["clean_format_ok"],
+                    }
+                    if llm_audit is not None
+                    else None
+                ),
+            }
+            if llm_output is not None:
+                report_payload["timeomni_quality"] = evaluate_response_quality(report_payload, thresholds=thresholds)
+
             reports.append(
-                {
-                    "unit_id": prediction["unit_id"],
-                    "tcn_prediction": prediction,
-                    "sensor_summary": summary,
-                    "timeomni_question": question,
-                    "timeomni_response": llm_output,
-                }
+                report_payload
             )
 
         return {

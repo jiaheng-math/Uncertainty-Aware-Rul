@@ -23,6 +23,7 @@ reasoning:
     You will receive:
     1. A TCN-based RUL prediction.
     2. A concise summary of recent sensor behavior.
+    3. Explicit warning thresholds and action-window rules.
 
     Produce a maintenance-oriented answer using exactly these tags:
     <risk_summary>...</risk_summary>
@@ -33,12 +34,14 @@ reasoning:
 
     Requirements:
     - Ground every section in the provided numbers. Mention predicted RUL, warning level, and at least two sensor names when relevant.
+    - Use only the thresholds and action rules given in the input. Do not invent any extra threshold.
+    - If the input gives a recommended action window for the current warning level, follow it unless you explicitly explain a stricter choice from the provided numbers.
     - Do not repeat the prompt wording or reuse the same sentence template across cases.
     - Avoid generic phrases like "closely monitor" unless you also state what to monitor and why.
     - In <maintenance_action>, state a concrete action window such as immediate, next 10 cycles, next 20 cycles, or routine monitoring.
     - In <confidence_note>, explain confidence from the available evidence instead of vague judgement.
-    - Output only the five tags and their contents. No extra wrapper tags or preamble.
+    - Output only the five tags and their contents. No extra wrapper tags, markdown fences, bullet titles, or preamble.
   max_new_tokens: 768
-  temperature: 0.35
+  temperature: 0.1
   top_p: 0.9
   repetition_penalty: 1.05
