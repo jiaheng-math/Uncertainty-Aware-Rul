@@ -17,6 +17,8 @@ def build_chat_prompt(question: str, system_prompt: str) -> str:
 @dataclass
 class GenerationConfig:
     max_new_tokens: int = 768
+    temperature: float = 0.35
+    top_p: float = 0.9
     repetition_penalty: float = 1.05
 
 
@@ -52,11 +54,14 @@ class TimeOmniAdapter:
 
         prompt = build_chat_prompt(question, system_prompt)
         inputs = self.tokenizer(prompt, return_tensors="pt").to(self.device)
+        use_sampling = self.generation_config.temperature > 0
         with torch.no_grad():
             outputs = self.model.generate(
                 **inputs,
                 max_new_tokens=self.generation_config.max_new_tokens,
-                do_sample=False,
+                do_sample=use_sampling,
+                temperature=self.generation_config.temperature if use_sampling else None,
+                top_p=self.generation_config.top_p if use_sampling else None,
                 repetition_penalty=self.generation_config.repetition_penalty,
             )
         generated_tokens = outputs[0][inputs["input_ids"].shape[1] :]
