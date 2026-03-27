@@ -110,14 +110,19 @@ def _contains_approx_value(text: str, value: float | None) -> bool:
     return False
 
 
-def _extract_action_urgency(text: str) -> tuple[int | None, str | None]:
+def _strip_conditional_windows(text: str) -> str:
     lowered = text.lower()
-    if re.search(r"\b(if|when)\b.{0,80}next\s+10\s+cycles", lowered, flags=re.DOTALL):
-        lowered = re.sub(r"\b(if|when)\b.{0,80}next\s+10\s+cycles", "", lowered, flags=re.DOTALL)
-    if re.search(r"\b(if|when)\b.{0,80}next\s+20\s+cycles", lowered, flags=re.DOTALL):
-        lowered = re.sub(r"\b(if|when)\b.{0,80}next\s+20\s+cycles", "", lowered, flags=re.DOTALL)
-    if re.search(r"\b(if|when)\b.{0,80}immediate", lowered, flags=re.DOTALL):
-        lowered = re.sub(r"\b(if|when)\b.{0,80}immediate", "", lowered, flags=re.DOTALL)
+    lowered = re.sub(r"\b(if|when)\b.{0,120}next\s+10\s+cycles", "", lowered, flags=re.DOTALL)
+    lowered = re.sub(r"\b(if|when)\b.{0,120}next\s+20\s+cycles", "", lowered, flags=re.DOTALL)
+    lowered = re.sub(r"\b(if|when)\b.{0,120}routine\s+monitoring", "", lowered, flags=re.DOTALL)
+    lowered = re.sub(r"\b(if|when)\b.{0,120}immediate", "", lowered, flags=re.DOTALL)
+    return lowered
+
+
+def _extract_action_urgency(text: str, *, allow_conditional: bool = False) -> tuple[int | None, str | None]:
+    lowered = text.lower()
+    if not allow_conditional:
+        lowered = _strip_conditional_windows(lowered)
     if "no immediate action" in lowered:
         # Treated as a weak form of routine handling unless a stronger explicit window is present later.
         return 0, "no immediate action"
@@ -160,6 +165,8 @@ def evaluate_response_quality(
 
     audit = normalize_llm_response(report.get("timeomni_response"))
     text = audit["cleaned_text"] or audit["raw_text"]
+    maintenance_text = audit["tags"].get("maintenance_action", text)
+    follow_up_text = audit["tags"].get("follow_up_checks", "")
     mentioned_sensors = sorted(
         {
             sensor.lower()
@@ -178,19 +185,24 @@ def evaluate_response_quality(
 
     consistency_issues: list[str] = []
     lowered = text.lower()
+    maintenance_lowered = maintenance_text.lower()
     lower_bound = prediction.get("lower_95")
     if lower_bound is not None and lower_bound > thresholds["alert"]:
         if "below the 20-cycle threshold" in lowered or "threshold for \"danger\"" in lowered or "threshold for danger" in lowered:
             consistency_issues.append("danger-threshold claim conflicts with the actual lower bound.")
-    if lower_bound is not None and lower_bound > thresholds["watch"] and "immediate action" in lowered:
+    if lower_bound is not None and lower_bound > thresholds["watch"] and "immediate action" in maintenance_lowered:
         consistency_issues.append("maintenance urgency appears stronger than the current lower-bound risk level.")
-    if "no immediate action" in lowered and (
-        "replace" in lowered or "replacement" in lowered or "shutdown" in lowered or "full inspection" in lowered
+    if "no immediate action" in maintenance_lowered and (
+        "replace" in maintenance_lowered
+        or "replacement" in maintenance_lowered
+        or "shutdown" in maintenance_lowered
+        or "full inspection" in maintenance_lowered
     ):
         consistency_issues.append("the response says no immediate action but still recommends a strong intervention.")
 
     expected_urgency = _expected_action_urgency(prediction, thresholds)
-    actual_urgency, action_label = _extract_action_urgency(text)
+    actual_urgency, action_label = _extract_action_urgency(maintenance_text, allow_conditional=False)
+    conditional_urgency, conditional_label = _extract_action_urgency(follow_up_text, allow_conditional=True)
     action_assessment = "unknown"
     if actual_urgency is not None:
         if actual_urgency < expected_urgency:
@@ -229,5 +241,7 @@ def evaluate_response_quality(
             "expected_min_urgency": expected_urgency,
             "assessment": action_assessment,
             "has_explicit_window": action_label is not None,
+            "conditional_label": conditional_label,
+            "conditional_urgency": conditional_urgency,
         },
     }
