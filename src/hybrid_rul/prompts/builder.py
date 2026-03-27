@@ -19,6 +19,7 @@ def build_timeomni_question(prediction: dict, summary: dict, thresholds: dict | 
         f"Predictive sigma: {sigma_text}\n"
         f"Lower 95% bound: {lower_text}\n"
         f"Warning level: {prediction['warning']['level']}\n"
+        f"Exact warning level token: {prediction['warning']['level']}\n"
         f"Escalated by uncertainty: {prediction['warning']['escalated']}\n"
         "Warning thresholds:\n"
         f"- 正常: lower bound > {thresholds['normal']}\n"

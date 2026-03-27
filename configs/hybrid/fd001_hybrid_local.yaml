@@ -36,6 +36,7 @@ reasoning:
     - Ground every section in the provided numbers. Mention predicted RUL, lower bound, warning level, and at least two sensor names when relevant.
     - Explicitly repeat the given warning level in <risk_summary> or <confidence_note>.
     - Repeat the exact warning level string from the input without renaming, translating, or reinterpreting it.
+    - Copy the exact warning level token from the dedicated input field `Exact warning level token:` verbatim.
     - Mention at least two sensor names selected from the provided recent feature trends.
     - In <key_evidence> and <follow_up_checks>, mention at least two sensor names from the provided recent feature trends.
     - Use only the thresholds and action rules given in the input. Do not invent any threshold such as "danger means below 100 cycles" unless it is explicitly provided.
