@@ -41,8 +41,6 @@ class HybridPipeline:
             model_dir=str(timeomni_model_dir) if timeomni_model_dir is not None else None,
             generation_config=GenerationConfig(
                 max_new_tokens=int(reasoning_cfg.get("max_new_tokens", 768)),
-                temperature=float(reasoning_cfg.get("temperature", 0.1)),
-                top_p=float(reasoning_cfg.get("top_p", 0.001)),
                 repetition_penalty=float(reasoning_cfg.get("repetition_penalty", 1.05)),
             ),
         )

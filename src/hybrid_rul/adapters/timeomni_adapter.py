@@ -17,8 +17,6 @@ def build_chat_prompt(question: str, system_prompt: str) -> str:
 @dataclass
 class GenerationConfig:
     max_new_tokens: int = 768
-    temperature: float = 0.1
-    top_p: float = 0.001
     repetition_penalty: float = 1.05
 
 
@@ -40,7 +38,9 @@ class TimeOmniAdapter:
         if self.model is not None and self.tokenizer is not None:
             return
         self.tokenizer = AutoTokenizer.from_pretrained(self.model_dir)
-        self.model = AutoModelForCausalLM.from_pretrained(self.model_dir).to(self.device)
+        self.model = AutoModelForCausalLM.from_pretrained(
+            self.model_dir, torch_dtype=torch.bfloat16
+        ).to(self.device)
         self.model.eval()
 
     def generate(self, question: str, system_prompt: str) -> str | None:
@@ -56,9 +56,7 @@ class TimeOmniAdapter:
             outputs = self.model.generate(
                 **inputs,
                 max_new_tokens=self.generation_config.max_new_tokens,
-                do_sample=True,
-                temperature=self.generation_config.temperature,
-                top_p=self.generation_config.top_p,
+                do_sample=False,
                 repetition_penalty=self.generation_config.repetition_penalty,
             )
         generated_tokens = outputs[0][inputs["input_ids"].shape[1] :]
